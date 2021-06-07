@@ -12,3 +12,8 @@ main.js
 
 # obsidian
 data.json
+
+playground/
+.vscode
+.ipynb_checkpoints
+.DS_Store

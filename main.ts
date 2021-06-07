@@ -1,60 +1,71 @@
-import { App, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {
+	App,
+	MarkdownPostProcessorContext,
+	Plugin,
+	PluginSettingTab,
+	Setting,
+	FileSystemAdapter,
+	MarkdownRenderer
+} from 'obsidian';
+import { exec } from 'child_process';
 
-interface MyPluginSettings {
-	mySetting: string;
+interface JupyterPluginSettings {
+	pythonInterpreter: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: JupyterPluginSettings = {
+	pythonInterpreter: 'python'
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class JupyterPlugin extends Plugin {
+	settings: JupyterPluginSettings;
+
+	async postprocessor(src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
+		// Render the code using the default renderer for python.
+		await MarkdownRenderer.renderMarkdown('```python\n' + src + '```', el, '', this.app.workspace.activeLeaf.view);
+
+		// Needed for positioning of the button and hiding Jupyter prompts.
+		el.classList.add('obsidian-jupyter');
+
+		// Add a button to run the code.
+		var button = el.createEl('button');
+		button.type = 'button';
+		button.innerText = 'Run';
+		button.className = 'obsidian-jupyter-run-button';
+		button.addEventListener('click', () => {
+			button.innerText = 'Running...';
+			let options = {
+				cwd: (this.app.vault.adapter as FileSystemAdapter).getBasePath(),
+			};
+			let cmd = `${this.settings.pythonInterpreter} ${this.app.vault.configDir}/plugins/obsidian-jupyter/convert.py`;
+			let child = exec(cmd, options, (error, stdout, stderr) => {
+				// Find the div to paste the output into or create it if necessary.
+				var output = el.querySelector('div.obsidian-jupyter-output');
+				if (output == null) {
+					output = el.createEl('div');
+					output.classList.add('obsidian-jupyter-output');
+				}
+				// Paste the output and reset the button.
+				output.innerHTML = stdout;
+				button.innerText = 'Run';
+			});
+			// Send the code to execute to the conversion script.
+			child.stdin.write(src);
+			child.stdin.end();
+		});
+	}
 
 	async onload() {
-		console.log('loading plugin');
+		console.log('loading jupyter plugin');
 
 		await this.loadSettings();
 
-		this.addRibbonIcon('dice', 'Sample Plugin', () => {
-			new Notice('This is a notice!');
-		});
-
-		this.addStatusBarItem().setText('Status Bar Text');
-
-		this.addCommand({
-			id: 'open-sample-modal',
-			name: 'Open Sample Modal',
-			// callback: () => {
-			// 	console.log('Simple Callback');
-			// },
-			checkCallback: (checking: boolean) => {
-				let leaf = this.app.workspace.activeLeaf;
-				if (leaf) {
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-					return true;
-				}
-				return false;
-			}
-		});
-
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		this.registerCodeMirror((cm: CodeMirror.Editor) => {
-			console.log('codemirror', cm);
-		});
-
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		this.addSettingTab(new JupyterSettingTab(this.app, this));
+		this.registerMarkdownCodeBlockProcessor('jupyter', this.postprocessor.bind(this));
 	}
 
 	onunload() {
-		console.log('unloading plugin');
+		console.log('unloading jupyter plugin');
 	}
 
 	async loadSettings() {
@@ -66,46 +77,26 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
+class JupyterSettingTab extends PluginSettingTab {
+	plugin: JupyterPlugin;
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: JupyterPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		let {containerEl} = this;
+		let { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
-
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Python interpreter')
+			.setDesc('Path to your python interpreter')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue('')
+				.setValue(this.plugin.settings.pythonInterpreter)
 				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.pythonInterpreter = value;
 					await this.plugin.saveSettings();
 				}));
 	}
