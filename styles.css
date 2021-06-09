@@ -27,6 +27,6 @@
 }
 
 /* hide the output prompts of jupyter cells*/
-.obsidian-jupyter .prompt {
-    visibility: hidden;
+.obsidian-jupyter .prompt, .obsidian-jupyter .input {
+    display: none;
 }
