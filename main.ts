@@ -23,6 +23,7 @@ class JupyterClient {
 	process: ChildProcess;
 	promises: Map<string, any>;
 	stdinParts: string[];
+	interpreter: string;
 
 	processStdIn(data: any) {
 		this.stdinParts.push(data.toString());
@@ -42,8 +43,9 @@ class JupyterClient {
 		console.log(data.toString());
 	}
 
-	constructor (cmd: string, args?: string[], options?: any) {
-		this.process = spawn(cmd, args, options);
+	constructor (interpreter: string, args?: string[], options?: any) {
+		this.interpreter = interpreter;
+		this.process = spawn(interpreter, args, options);
 		this.process.stdout.on('data', this.processStdIn.bind(this));
 		this.process.stderr.on('data', this.processStdErr.bind(this));
 		this.process.on('error', console.log);
@@ -84,7 +86,6 @@ export default class JupyterPlugin extends Plugin {
 
 		// Needed for positioning of the button and hiding Jupyter prompts.
 		el.classList.add('obsidian-jupyter');
-
 		// Add a button to run the code.
 		var button = el.createEl('button');
 		button.type = 'button';
@@ -92,7 +93,7 @@ export default class JupyterPlugin extends Plugin {
 		button.className = 'obsidian-jupyter-run-button';
 		button.addEventListener('click', () => {
 			button.innerText = 'Running...';
-			this.getJupyterClient(ctx.docId).request({
+			this.getJupyterClient(ctx).request({
 				command: 'execute',
 				source: src,
 			}).then(response => {
@@ -109,16 +110,29 @@ export default class JupyterPlugin extends Plugin {
 		});
 	}
 
-	getJupyterClient(docId: string): JupyterClient {
-		let client = this.clients.get(docId);
+	getJupyterClient(ctx: MarkdownPostProcessorContext): JupyterClient {
+		let client = this.clients.get(ctx.docId);
+		// Construct the interpeter path.
+		let cache = this.app.metadataCache.getCache(ctx.sourcePath);
+		let frontmatter: any = cache.frontmatter || {};
+		let interpreter = (frontmatter['obsidian-jupyter'] || {})['interpreter'] || this.settings.pythonInterpreter;
+		// If we have a client, check that the interpreter path is right and stop it if not.
+		if (client && client.interpreter != interpreter) {
+			console.log(`interpreter path (${client.interpreter}) for the client for doc ` +
+						`${ctx.docId} does not match the desired path (${interpreter})`);
+			client.stop();
+			client = undefined;
+		}
+
+		// Create a new interpreter path if required.
 		if (client === undefined) {
 			let options = {
 				cwd: (this.app.vault.adapter as FileSystemAdapter).getBasePath(),
 			};
 			let path = `${this.app.vault.configDir}/plugins/obsidian-jupyter/obsidian-jupyter.py`;
-			client = new JupyterClient(this.settings.pythonInterpreter, [path, docId], options);
-			this.clients.set(docId, client);
-			console.log(`created new client for doc ${docId}`);
+			client = new JupyterClient(interpreter, [path, ctx.docId], options);
+			this.clients.set(ctx.docId, client);
+			console.log(`created new client for doc ${ctx.docId}`);
 		}
 		return client;
 	}
