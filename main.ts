@@ -55,14 +55,14 @@ class JupyterClient {
 
 	async request(body: any): Promise<any> {
 		// Generate a random identifier.
-		var id = uuid();
+		let id = uuid();
 		// Send the request (\n terminated to make sure it gets picked up by the python process).
-		var data = JSON.stringify({id: id, body: body});
+		let data = JSON.stringify({id: id, body: body});
 		this.process.stdin.write(data + '\n');
 		// Create a resolvable promise and store it against the id.
-		var resolve;
-		var reject;
-		var promise = new Promise((resolve_, reject_) => {
+		let resolve;
+		let reject;
+		let promise = new Promise((resolve_, reject_) => {
 			resolve = resolve_;
 			reject = reject_;
 		})
@@ -87,10 +87,11 @@ export default class JupyterPlugin extends Plugin {
 		// Needed for positioning of the button and hiding Jupyter prompts.
 		el.classList.add('obsidian-jupyter');
 		// Add a button to run the code.
-		var button = el.createEl('button');
-		button.type = 'button';
-		button.innerText = 'Run';
-		button.className = 'obsidian-jupyter-run-button';
+		let button = el.createEl('button', {
+			type: 'button',
+			text: 'Run',
+			cls: 'obsidian-jupyter-run-button',
+		});
 		button.addEventListener('click', () => {
 			button.innerText = 'Running...';
 			this.getJupyterClient(ctx).request({
@@ -98,7 +99,7 @@ export default class JupyterPlugin extends Plugin {
 				source: src,
 			}).then(response => {
 				// Find the div to paste the output into or create it if necessary.
-				var output = el.querySelector('div.obsidian-jupyter-output');
+				let output = el.querySelector('div.obsidian-jupyter-output');
 				if (output == null) {
 					output = el.createEl('div');
 					output.classList.add('obsidian-jupyter-output');
@@ -126,13 +127,17 @@ export default class JupyterPlugin extends Plugin {
 
 		// Create a new interpreter path if required.
 		if (client === undefined) {
-			let options = {
-				cwd: (this.app.vault.adapter as FileSystemAdapter).getBasePath(),
-			};
-			let path = `${this.app.vault.configDir}/plugins/obsidian-jupyter/obsidian-jupyter.py`;
-			client = new JupyterClient(interpreter, [path, ctx.docId], options);
-			this.clients.set(ctx.docId, client);
-			console.log(`created new client for doc ${ctx.docId}`);
+			if (this.app.vault.adapter instanceof FileSystemAdapter) {
+				let options = {
+					cwd: (this.app.vault.adapter as FileSystemAdapter).getBasePath(),
+				};
+				let path = `${this.app.vault.configDir}/plugins/obsidian-jupyter/obsidian-jupyter.py`;
+				client = new JupyterClient(interpreter, [path, ctx.docId], options);
+				this.clients.set(ctx.docId, client);
+				console.log(`created new client for doc ${ctx.docId}`);
+			} else {
+				console.error(`cannot obtain current working directory from ${this.app.vault.adapter}`);
+			}
 		}
 		return client;
 	}
