@@ -5,7 +5,8 @@ import {
 	PluginSettingTab,
 	Setting,
 	FileSystemAdapter,
-	MarkdownRenderer
+	MarkdownRenderer,
+	Notice
 } from 'obsidian';
 import { spawn, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
@@ -22,14 +23,14 @@ const DEFAULT_SETTINGS: JupyterPluginSettings = {
 class JupyterClient {
 	process: ChildProcess;
 	promises: Map<string, any>;
-	stdinParts: string[];
+	stdoutParts: string[];
 	interpreter: string;
 
-	processStdIn(data: any) {
-		this.stdinParts.push(data.toString());
-		if (this.stdinParts.last().endsWith('\n')) {
-			let response = JSON.parse(this.stdinParts.join(''));
-			this.stdinParts = [];
+	processStdOut(data: any) {
+		this.stdoutParts.push(data.toString());
+		if (this.stdoutParts.last().endsWith('\n')) {
+			let response = JSON.parse(this.stdoutParts.join(''));
+			this.stdoutParts = [];
 			let promise = this.promises.get(response.id);
 			if (promise === undefined) {
 				console.error(`received response for unrecognised promise: ${response.id}`);
@@ -46,11 +47,11 @@ class JupyterClient {
 	constructor (interpreter: string, args?: string[], options?: any) {
 		this.interpreter = interpreter;
 		this.process = spawn(interpreter, args, options);
-		this.process.stdout.on('data', this.processStdIn.bind(this));
+		this.process.stdout.on('data', this.processStdOut.bind(this));
 		this.process.stderr.on('data', this.processStdErr.bind(this));
 		this.process.on('error', console.log);
 		this.promises = new Map();
-		this.stdinParts = [];
+		this.stdoutParts = [];
 	}
 
 	async request(body: any): Promise<any> {
@@ -115,7 +116,7 @@ export default class JupyterPlugin extends Plugin {
 		let client = this.clients.get(ctx.docId);
 		// Construct the interpeter path.
 		let cache = this.app.metadataCache.getCache(ctx.sourcePath);
-		let frontmatter: any = cache.frontmatter || {};
+		let frontmatter: any = (cache ? cache.frontmatter : {}) || {};
 		let interpreter = (frontmatter['obsidian-jupyter'] || {})['interpreter'] || this.settings.pythonInterpreter;
 		// If we have a client, check that the interpreter path is right and stop it if not.
 		if (client && client.interpreter != interpreter) {
@@ -184,12 +185,41 @@ class JupyterSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Python interpreter')
-			.setDesc('Path to your python interpreter')
+			.setDesc('Path to your python interpreter.')
 			.addText(text => text
 				.setValue(this.plugin.settings.pythonInterpreter)
 				.onChange(async (value) => {
 					this.plugin.settings.pythonInterpreter = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Test python environment')
+			.setDesc('Run a script to test the setup of your python environment (view developer console for details).')
+			.addButton(button => {
+				button.setButtonText('Run test');
+				button.onClick(evt => {
+					let client = this.plugin.getJupyterClient({
+						docId: 'test-document',
+						sourcePath: null,
+						frontmatter: null,
+						addChild: null,
+						getSectionInfo: null,
+					});
+					client.request({
+						command: 'execute',
+						source: '1 + 1',
+					}).then(response => {
+						console.log('Received response', response);
+						new Notice('Test successful, view developer console for details.');
+					}
+					).catch(error => {
+						console.error(error);
+						new Notice('Test failed, view developer console for details.');
+					}).finally(() => {
+						client.stop();
+					});
+				});
+			});
 	}
 }

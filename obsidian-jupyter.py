@@ -50,6 +50,9 @@ try:
         elif request_body['command'] == 'restart_kernel':
             km.restart_kernel()
             response_body = ''
+        else:
+            logger.error('unrecognised command: %s', request_body['command'])
+            response_body = ''
 
         # Pass the response back.
         response['body'] = response_body
@@ -60,6 +63,7 @@ try:
 finally:
     # Clean up the kernel.
     if km.is_alive:
+        logger.info('shutting down kernel...')
         km.shutdown_kernel()
 
 logger.info('exiting...')
