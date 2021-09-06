@@ -1,4 +1,4 @@
-name: Release Obsidian Plugin
+name: Release
 on:
   push:
     # Sequence of patterns matched against refs/tags
