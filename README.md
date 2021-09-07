@@ -4,6 +4,27 @@ This plugin allows python code blocks in fences with `jupyter` language to be ex
 
 ![](obsidian-jupyter.gif)
 
+## Installation
+
+1. Install the plugin via the community plugins settings tab in Obsidian.
+2. Specify the python interpreter path in the settings tab of the plugin. If you don't know what your interpreter path is, run `python -c 'import sys; print(sys.executable)'` from the console.
+3. Verify that jupyter is installed. If you're unsure, run `pip install jupyter --upgrade` from the console to install the latest version.
+
+This plugin has been tested with the following python dependencies. If you encounter problems, please update your python dependencies before opening an issue.
+
+```
+jupyter==1.0.0
+jupyter-client==7.0.2
+jupyter-console==6.4.0
+jupyter-core==4.7.1
+jupyterlab-pygments==0.1.2
+jupyterlab-widgets==1.0.1
+nbclient==0.5.4
+nbconvert==6.1.0
+nbformat==5.1.3
+notebook=6.4.3
+```
+
 ## Settings
 
 * Python interpreter: path to the python interpreter used to execute code, e.g. `/usr/bin/python`.
