@@ -10,6 +10,8 @@ import {
 } from 'obsidian';
 import { spawn, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
+import { statSync, writeFileSync } from 'fs';
+import { HttpClient } from 'typed-rest-client/HttpClient';
 
 interface JupyterPluginSettings {
 	pythonInterpreter: string;
@@ -126,31 +128,63 @@ export default class JupyterPlugin extends Plugin {
 			client = undefined;
 		}
 
-		// Create a new interpreter path if required.
+		// Create a new interpreter if required.
 		if (client === undefined) {
-			if (this.app.vault.adapter instanceof FileSystemAdapter) {
-				let options = {
-					cwd: (this.app.vault.adapter as FileSystemAdapter).getBasePath(),
-				};
-				let path = `${this.app.vault.configDir}/plugins/obsidian-jupyter/obsidian-jupyter.py`;
-				client = new JupyterClient(interpreter, [path, ctx.docId], options);
-				this.clients.set(ctx.docId, client);
-				console.log(`created new client for doc ${ctx.docId}`);
-			} else {
-				console.error(`cannot obtain current working directory from ${this.app.vault.adapter}`);
-			}
+			let options = {cwd: this.getBasePath()};
+			let path = this.getRelativeScriptPath();
+			client = new JupyterClient(interpreter, [path, ctx.docId], options);
+			this.clients.set(ctx.docId, client);
+			console.log(`created new client for doc ${ctx.docId}`);
 		}
 		return client;
 	}
 
 	async onload() {
 		console.log('loading jupyter plugin');
+		this.clients = new Map();
 
 		await this.loadSettings();
+		await this.downloadPythonScript();
 
 		this.addSettingTab(new JupyterSettingTab(this.app, this));
 		this.registerMarkdownCodeBlockProcessor('jupyter', this.postprocessor.bind(this));
-		this.clients = new Map();
+	}
+
+	async downloadPythonScript() {
+		let path = this.getAbsoluteScriptPath();
+		try {
+			let stats = statSync(path);
+			if (!stats.isFile()) {
+				throw new Error('python script is missing');
+			}
+			console.log(`python script exists at ${path}`);
+		} catch {
+			console.log('downloading missing python script...');
+			let client = new HttpClient('obsidian-jupyter');
+			let url = `https://github.com/tillahoffmann/obsidian-jupyter/releases/download/${this.manifest.version}/obsidian-jupyter.py`;
+			let response = await client.get(url);
+			if (response.message.statusCode != 200) {
+				throw new Error(`could not download missing python script: ${response.message.statusMessage}`);
+			}
+			let content = await response.readBody();
+			writeFileSync(path, content);
+			console.log('obtained missing python script');
+		}
+	}
+
+	getRelativeScriptPath(): string {
+		return `${this.app.vault.configDir}/plugins/obsidian-jupyter/obsidian-jupyter.py`;
+	}
+
+	getAbsoluteScriptPath(): string {
+		return `${this.getBasePath()}/${this.getRelativeScriptPath()}`;
+	}
+
+	getBasePath(): string {
+		if (this.app.vault.adapter instanceof FileSystemAdapter) {
+			return (this.app.vault.adapter as FileSystemAdapter).getBasePath();
+		}
+		throw new Error('cannot determine base path');
 	}
 
 	onunload() {
@@ -218,6 +252,7 @@ class JupyterSettingTab extends PluginSettingTab {
 						new Notice('Test failed, view developer console for details.');
 					}).finally(() => {
 						client.stop();
+						this.plugin.clients.delete('test-document');
 					});
 				});
 			});

@@ -1,27 +1,28 @@
 {
-  "name": "obsidian-jupyter-plugin",
-  "version": "0.2.0",
-  "description": "This plugin allows code blocks to be executed as Jupyter notebooks.",
-  "main": "main.js",
-  "scripts": {
-    "dev": "rollup --config rollup.config.js -w",
-    "build": "rollup --config rollup.config.js --environment BUILD:production"
-  },
-  "keywords": [],
-  "author": "Till Hoffmann",
-  "license": "MIT",
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^18.0.0",
-    "@rollup/plugin-node-resolve": "^11.2.1",
-    "@rollup/plugin-typescript": "^8.2.1",
-    "@types/node": "^14.14.37",
-    "@types/uuid": "^8.3.0",
-    "obsidian": "^0.12.0",
-    "rollup": "^2.32.1",
-    "tslib": "^2.2.0",
-    "typescript": "~4.2.4"
-  },
-  "dependencies": {
-    "uuid": "^8.3.2"
-  }
+    "name": "obsidian-jupyter-plugin",
+    "version": "0.3.0",
+    "description": "This plugin allows code blocks to be executed as Jupyter notebooks.",
+    "main": "main.js",
+    "scripts": {
+        "dev": "rollup --config rollup.config.js -w",
+        "build": "rollup --config rollup.config.js --environment BUILD:production"
+    },
+    "keywords": [],
+    "author": "Till Hoffmann",
+    "license": "MIT",
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "^18.0.0",
+        "@rollup/plugin-node-resolve": "^11.2.1",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@types/node": "^14.14.37",
+        "@types/uuid": "^8.3.0",
+        "obsidian": "^0.12.0",
+        "rollup": "^2.32.1",
+        "tslib": "^2.2.0",
+        "typescript": "~4.2.4"
+    },
+    "dependencies": {
+        "typed-rest-client": "^1.8.6",
+        "uuid": "^8.3.2"
+    }
 }
