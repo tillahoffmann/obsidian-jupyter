@@ -1,4 +1,4 @@
-# Obsidian Jupyter Plugin ![](https://img.shields.io/badge/stability-alpha-f4d03f.svg) [![Release Obsidian Plugin](https://github.com/tillahoffmann/obsidian-jupyter/actions/workflows/release.yml/badge.svg)](https://github.com/tillahoffmann/obsidian-jupyter/actions/workflows/release.yml)
+# Obsidian Jupyter Plugin ![](https://img.shields.io/badge/stability-alpha-f4d03f.svg) [![Release Obsidian Plugin](https://github.com/tillahoffmann/obsidian-jupyter/actions/workflows/release.yml/badge.svg)](https://github.com/tillahoffmann/obsidian-jupyter/actions/workflows/release.yml) ![](https://img.shields.io/badge/python-≥3.7-blue)
 
 This plugin allows python code blocks in fences with `jupyter` language to be executed as Jupyter notebooks.
 
@@ -7,7 +7,7 @@ This plugin allows python code blocks in fences with `jupyter` language to be ex
 ## Installation
 
 1. Install the plugin via the community plugins settings tab in Obsidian.
-2. Specify the python interpreter path in the settings tab of the plugin. If you don't know what your interpreter path is, run `python -c 'import sys; print(sys.executable)'` from the console.
+2. Specify the python interpreter path in the settings tab of the plugin. If you don't know what your interpreter path is, run `python -c 'import sys; print(sys.executable)'` from the console. The python version should be at least 3.7.
 3. Verify that jupyter is installed. If you're unsure, run `pip install jupyter --upgrade` from the console to install the latest version.
 
 This plugin has been tested with the following python dependencies. If you encounter problems, please update your python dependencies before opening an issue.
