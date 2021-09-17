@@ -1,7 +1,7 @@
 {
     "id": "obsidian-jupyter",
     "name": "Jupyter plugin",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "minAppVersion": "0.9.12",
     "description": "This plugin allows code blocks to be executed as Jupyter notebooks.",
     "author": "Till Hoffmann",

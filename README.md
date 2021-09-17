@@ -28,6 +28,7 @@ notebook=6.4.3
 ## Settings
 
 * Python interpreter: path to the python interpreter used to execute code, e.g. `/usr/bin/python`.
+* Setup script: script that is run prior to every execution of a python code block.
 
 The python interpreter can also be specified for each document using YAML frontmatter.
 

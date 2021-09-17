@@ -15,10 +15,12 @@ import { HttpClient } from 'typed-rest-client/HttpClient';
 
 interface JupyterPluginSettings {
 	pythonInterpreter: string;
+	setupScript: string;
 }
 
 const DEFAULT_SETTINGS: JupyterPluginSettings = {
-	pythonInterpreter: 'python'
+	pythonInterpreter: 'python',
+	setupScript: '',
 }
 
 
@@ -99,7 +101,7 @@ export default class JupyterPlugin extends Plugin {
 			button.innerText = 'Running...';
 			this.getJupyterClient(ctx).request({
 				command: 'execute',
-				source: src,
+				source: `${this.settings.setupScript}\n${src}`,
 			}).then(response => {
 				// Find the div to paste the output into or create it if necessary.
 				let output = el.querySelector('div.obsidian-jupyter-output');
@@ -219,13 +221,27 @@ class JupyterSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Python interpreter')
-			.setDesc('Path to your python interpreter.')
+			.setDesc('Path to your python interpreter, e.g. `/usr/bin/python`.')
+			.setClass('wideSettingsElement')
 			.addText(text => text
 				.setValue(this.plugin.settings.pythonInterpreter)
 				.onChange(async (value) => {
 					this.plugin.settings.pythonInterpreter = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Python setup script')
+			.setDesc('Script that is run prior to every execution of a python code block.')
+			.setClass('setupScriptTextArea')
+			.setClass('wideSettingsElement')
+			.addTextArea(text => text
+				.setValue(this.plugin.settings.setupScript)
+				.onChange(async (value) => {
+					this.plugin.settings.setupScript = value;
+					await this.plugin.saveSettings();
+				})
+			);
 
 		new Setting(containerEl)
 			.setName('Test python environment')

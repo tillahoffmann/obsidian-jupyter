@@ -30,3 +30,11 @@
 .obsidian-jupyter .prompt, .obsidian-jupyter .input {
     display: none;
 }
+
+.wideSettingsElement textarea, .wideSettingsElement input {
+    min-width: 300px;
+}
+
+.setupScriptTextArea textarea {
+    font-family: monospace;
+}
