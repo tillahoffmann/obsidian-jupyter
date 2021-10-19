@@ -8,7 +8,7 @@ import {
 	MarkdownRenderer,
 	Notice
 } from 'obsidian';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, exec, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
 import { statSync, writeFileSync } from 'fs';
 import { HttpClient } from 'typed-rest-client/HttpClient';
@@ -269,6 +269,27 @@ class JupyterSettingTab extends PluginSettingTab {
 					}).finally(() => {
 						client.stop();
 						this.plugin.clients.delete('test-document');
+					});
+				});
+			});
+
+		new Setting(containerEl)
+			.setName('Install python dependencies')
+			.setDesc('This will modify your environment-use at your own risk.')
+			.addButton(button => {
+				button.setButtonText('Install dependencies');
+				button.onClick(evt => {
+					let interpreter = this.plugin.settings.pythonInterpreter;
+					let command = `${interpreter} -m pip install --upgrade --upgrade-strategy eager jupyter`;
+					new Notice('Installing dependencies; this may take some time...');
+					exec(command, (error, stdout, stderr) => {
+						if (error) {
+							console.error(`failed to install dependencies: {error}`);
+							new Notice('Failed to install dependencies, view developer console for details.');
+						}
+						console.log(`install stdout: ${stdout}`);
+						console.log(`install stderr: ${stdout}`);
+						new Notice('Installed dependencies, view developer console for details.');
 					});
 				});
 			});
