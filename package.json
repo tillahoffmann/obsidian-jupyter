@@ -1,6 +1,6 @@
 {
     "name": "obsidian-jupyter-plugin",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "This plugin allows code blocks to be executed as Jupyter notebooks.",
     "main": "main.js",
     "scripts": {
