@@ -136,7 +136,7 @@ export default class JupyterPlugin extends Plugin {
 			let path = this.getRelativeScriptPath();
 			client = new JupyterClient(interpreter, [path, ctx.docId], options);
 			this.clients.set(ctx.docId, client);
-			console.log(`created new client for doc ${ctx.docId}`);
+			console.log(`created new client for doc ${ctx.docId} using interpreter ${interpreter}`);
 		}
 		return client;
 	}
