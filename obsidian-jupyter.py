@@ -25,9 +25,6 @@ nb = nbformat.v4.new_notebook(cells=[cell])
 km = KernelManager()
 client = NotebookClient(nb, km)
 
-# Use line buffering.
-sys.stdout.reconfigure(line_buffering=True)
-
 try:
     # Respond to each request.
     for request in sys.stdin:
@@ -58,8 +55,9 @@ try:
         response['body'] = response_body
         response = json.dumps(response)
         sys.stdout.write(response + '\n')
-        sys.stdout.flush()
         logger.info('sent response: %s', response)
+        sys.stdout.flush()
+        sys.stderr.flush()
 finally:
     # Clean up the kernel.
     if km.is_alive:

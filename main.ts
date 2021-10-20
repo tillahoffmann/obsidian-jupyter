@@ -13,6 +13,19 @@ import { v4 as uuid } from 'uuid';
 import { statSync, writeFileSync } from 'fs';
 import { HttpClient } from 'typed-rest-client/HttpClient';
 
+
+// https://stackoverflow.com/a/47614491/1150961.
+function setInnerHTML(elm: Element, html: string) {
+	elm.innerHTML = html;
+	Array.from(elm.querySelectorAll("script")).forEach( oldScript => {
+		const newScript = document.createElement("script");
+		Array.from(oldScript.attributes)
+		.forEach( attr => newScript.setAttribute(attr.name, attr.value) );
+		newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+		oldScript.parentNode.replaceChild(newScript, oldScript);
+	});
+}
+
 interface JupyterPluginSettings {
 	pythonInterpreter: string;
 	setupScript: string;
@@ -34,6 +47,7 @@ class JupyterClient {
 		this.stdoutParts.push(data.toString());
 		if (this.stdoutParts.last().endsWith('\n')) {
 			let response = JSON.parse(this.stdoutParts.join(''));
+			console.log('received response', response);
 			this.stdoutParts = [];
 			let promise = this.promises.get(response.id);
 			if (promise === undefined) {
@@ -110,7 +124,7 @@ export default class JupyterPlugin extends Plugin {
 					output.classList.add('obsidian-jupyter-output');
 				}
 				// Paste the output and reset the button.
-				output.innerHTML = response;
+				setInnerHTML(output, response);
 				button.innerText = 'Run';
 			});
 		});
