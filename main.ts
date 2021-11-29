@@ -16,11 +16,20 @@ import { HttpClient } from 'typed-rest-client/HttpClient';
 interface JupyterPluginSettings {
 	pythonInterpreter: string;
 	setupScript: string;
+	kernels: Map<string, KernelOptions>
+}
+
+interface KernelOptions {
+	displayName: string;
+	language: string;
+	kernelName: string;
+	setupScript: string;
 }
 
 const DEFAULT_SETTINGS: JupyterPluginSettings = {
 	pythonInterpreter: 'python',
 	setupScript: '',
+	kernels: new Map()
 }
 
 
@@ -85,8 +94,15 @@ export default class JupyterPlugin extends Plugin {
 	clients: Map<string, JupyterClient>;
 
 	async postprocessor(src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
+		const extractLanguageFromClass = (str: string) => str.split('-').pop();
+		const kernel = this.settings.kernels.get(extractLanguageFromClass(el.classList[0]));
+		if(!kernel)
+			return;
+
+		const { language, kernelName, setupScript } = kernel;
+
 		// Render the code using the default renderer for python.
-		await MarkdownRenderer.renderMarkdown('```python\n' + src + '```', el, '',
+		await MarkdownRenderer.renderMarkdown('```' + language + '\n' + src + '```', el, '',
 											  this.app.workspace.activeLeaf.view);
 
 		// Needed for positioning of the button and hiding Jupyter prompts.
@@ -101,7 +117,8 @@ export default class JupyterPlugin extends Plugin {
 			button.innerText = 'Running...';
 			this.getJupyterClient(ctx).request({
 				command: 'execute',
-				source: `${this.settings.setupScript}\n${src}`,
+				source: `${setupScript}\n${src}`,
+				kernelName
 			}).then(response => {
 				// Find the div to paste the output into or create it if necessary.
 				let output = el.querySelector('div.obsidian-jupyter-output');
@@ -148,8 +165,10 @@ export default class JupyterPlugin extends Plugin {
 		await this.loadSettings();
 		await this.downloadPythonScript();
 
-		this.addSettingTab(new JupyterSettingTab(this.app, this));
-		this.registerMarkdownCodeBlockProcessor('jupyter', this.postprocessor.bind(this));
+		// We want to make sure we find the kernels first before we initialize the Markdown Render Post Processors
+		this.findKernelsOnLocalMachine()
+			.then(() => this.initializeRenderMarkdownPostProcessors())
+		this.addSettingTab(new JupyterSettingTab(this.app, this));		
 	}
 
 	async downloadPythonScript() {
@@ -203,6 +222,43 @@ export default class JupyterPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	async findKernelsOnLocalMachine() {
+		const command = `python ${this.getBasePath()}/${this.app.vault.configDir}/plugins/obsidian-jupyter/kernel-extractor.py`;
+		return new Promise<void>((resolve, reject) => {
+			exec(command, async (err, stdout, stderr) => {
+				if (err) {
+					console.error(`Failed to get locally installed kernels: ${err}`)
+					new Notice('Failed to get locally installed kernels. Check the developer console for details');
+					reject();
+				}
+	
+				// Parse stdout and retrieve all installed kernels
+				const kernels: Record<string, any> = JSON.parse(stdout);
+	
+				// If the kernel is not stored in memory, add them
+				for(let [kernelName, kernel] of Object.entries(kernels)) {
+					const { display_name, language } = kernel.spec;
+					if(!this.settings.kernels.has(kernelName)) {
+						this.settings.kernels.set(language, {
+							displayName: display_name,
+							language,
+							kernelName,
+							setupScript: ''
+						});
+					}
+				}
+
+				console.log('DONE');
+				resolve();
+			})
+		})
+	}
+
+	initializeRenderMarkdownPostProcessors() {
+		const kernels = this.settings.kernels;
+		kernels.forEach((kernel) => this.registerMarkdownCodeBlockProcessor('jupyter-' + kernel.language, this.postprocessor.bind(this)))
 	}
 }
 

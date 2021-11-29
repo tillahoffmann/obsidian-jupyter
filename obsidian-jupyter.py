@@ -7,7 +7,12 @@ from nbclient import NotebookClient
 from nbclient.exceptions import CellExecutionError
 import json
 import logging
+from dataclasses import dataclass
 
+@dataclass
+class Client:
+    km: KernelManager
+    client: NotebookClient
 
 # Parse input arguments.
 parser = argparse.ArgumentParser()
@@ -22,8 +27,9 @@ logger.info('started server for document %s', args.document_id)
 # Create a notebook and kernel.
 cell = nbformat.v4.new_code_cell()
 nb = nbformat.v4.new_notebook(cells=[cell])
-km = KernelManager()
-client = NotebookClient(nb, km)
+
+# Persistent Kernels
+clients = {}
 
 # Use line buffering.
 sys.stdout.reconfigure(line_buffering=True)
@@ -38,6 +44,17 @@ try:
         response = {
             'id': request['id'],
         }
+        kernel_name = request_body['kernelName']
+
+        # Initialize Kernel, if necessary
+        if not kernel_name in clients:
+            logger.info('Creating new kernel: %s', kernel_name)
+            km = KernelManager(kernel_name=kernel_name)
+            clients[kernel_name] = Client(km, NotebookClient(nb, km))
+
+        client = clients[kernel_name].client
+        km = clients[kernel_name].km
+
         # Execute a cell.
         if request_body['command'] == 'execute':
             cell['source'] = request_body['source']
@@ -61,9 +78,10 @@ try:
         sys.stdout.flush()
         logger.info('sent response: %s', response)
 finally:
-    # Clean up the kernel.
-    if km.is_alive:
-        logger.info('shutting down kernel...')
-        km.shutdown_kernel()
+    # Clean up the kernels.
+    for k, client in clients.items():
+        if client.km.is_alive:
+            logger.info('shutting down the %s kernel.', k)
+            client.km.shutdown_kernel()
 
 logger.info('exiting...')
