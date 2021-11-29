@@ -161,7 +161,7 @@ export default class JupyterPlugin extends Plugin {
 		this.clients = new Map();
 
 		await this.loadSettings();
-		await this.downloadPythonScript();
+		await this.downloadPythonScripts();
 
 		// We want to make sure we find the kernels first before we initialize the Markdown Render Post Processors
 		this.findKernelsOnLocalMachine()
@@ -169,30 +169,38 @@ export default class JupyterPlugin extends Plugin {
 		this.addSettingTab(new JupyterSettingTab(this.app, this));		
 	}
 
-	async downloadPythonScript() {
-		let path = this.getAbsoluteScriptPath();
-		try {
-			let stats = statSync(path);
-			if (!stats.isFile()) {
-				throw new Error('python script is missing');
+	async downloadPythonScripts() {
+		const files = [
+			'obsidian-jupyter.py',
+			'kernel-extractor.py'
+		];
+
+		for (const file of files) {
+			let path = this.getAbsoluteScriptPath() + file;
+			try {
+				let stats = statSync(path);
+				if (!stats.isFile()) {
+					throw new Error('python script is missing');
+				}
+				console.log(`python script exists at ${path}`);
+			} catch {
+				console.log('downloading missing python script...');
+				let client = new HttpClient('obsidian-jupyter');
+				let url = `https://github.com/tillahoffmann/obsidian-jupyter/releases/download/${this.manifest.version}/${file}`;
+				let response = await client.get(url);
+				if (response.message.statusCode != 200) {
+					throw new Error(`could not download missing python script: ${response.message.statusMessage}`);
+				}
+				let content = await response.readBody();
+				writeFileSync(path, content);
+				console.log('obtained missing python script');
 			}
-			console.log(`python script exists at ${path}`);
-		} catch {
-			console.log('downloading missing python script...');
-			let client = new HttpClient('obsidian-jupyter');
-			let url = `https://github.com/tillahoffmann/obsidian-jupyter/releases/download/${this.manifest.version}/obsidian-jupyter.py`;
-			let response = await client.get(url);
-			if (response.message.statusCode != 200) {
-				throw new Error(`could not download missing python script: ${response.message.statusMessage}`);
-			}
-			let content = await response.readBody();
-			writeFileSync(path, content);
-			console.log('obtained missing python script');
 		}
 	}
 
 	getRelativeScriptPath(): string {
-		return `${this.app.vault.configDir}/plugins/obsidian-jupyter/obsidian-jupyter.py`;
+		// return `${this.app.vault.configDir}/plugins/obsidian-jupyter/obsidian-jupyter.py`;
+		return `${this.app.vault.configDir}/plugins/obsidian-jupyter/`;
 	}
 
 	getAbsoluteScriptPath(): string {
@@ -223,7 +231,7 @@ export default class JupyterPlugin extends Plugin {
 	}
 
 	async findKernelsOnLocalMachine() {
-		const command = `python ${this.getBasePath()}/${this.app.vault.configDir}/plugins/obsidian-jupyter/kernel-extractor.py`;
+		const command = `python ${this.getAbsoluteScriptPath()}kernel-extractor.py`;
 		return new Promise<void>((resolve, reject) => {
 			exec(command, async (err, stdout, stderr) => {
 				if (err) {
