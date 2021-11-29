@@ -15,8 +15,7 @@ import { HttpClient } from 'typed-rest-client/HttpClient';
 
 interface JupyterPluginSettings {
 	pythonInterpreter: string;
-	setupScript: string;
-	kernels: Map<string, KernelOptions>
+	kernels: Record<string, KernelOptions>
 }
 
 interface KernelOptions {
@@ -28,8 +27,7 @@ interface KernelOptions {
 
 const DEFAULT_SETTINGS: JupyterPluginSettings = {
 	pythonInterpreter: 'python',
-	setupScript: '',
-	kernels: new Map()
+	kernels: {}
 }
 
 
@@ -95,7 +93,7 @@ export default class JupyterPlugin extends Plugin {
 
 	async postprocessor(src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
 		const extractLanguageFromClass = (str: string) => str.split('-').pop();
-		const kernel = this.settings.kernels.get(extractLanguageFromClass(el.classList[0]));
+		const kernel = this.settings.kernels[extractLanguageFromClass(el.classList[0])];
 		if(!kernel)
 			return;
 
@@ -240,17 +238,18 @@ export default class JupyterPlugin extends Plugin {
 				// If the kernel is not stored in memory, add them
 				for(let [kernelName, kernel] of Object.entries(kernels)) {
 					const { display_name, language } = kernel.spec;
-					if(!this.settings.kernels.has(kernelName)) {
-						this.settings.kernels.set(language, {
+					if(!(language in this.settings.kernels)) {
+						this.settings.kernels[language] = {
 							displayName: display_name,
 							language,
 							kernelName,
 							setupScript: ''
-						});
+						};
+
+						this.saveSettings();
 					}
 				}
 
-				console.log('DONE');
 				resolve();
 			})
 		})
@@ -258,7 +257,7 @@ export default class JupyterPlugin extends Plugin {
 
 	initializeRenderMarkdownPostProcessors() {
 		const kernels = this.settings.kernels;
-		kernels.forEach((kernel) => this.registerMarkdownCodeBlockProcessor('jupyter-' + kernel.language, this.postprocessor.bind(this)))
+		Object.values(kernels).forEach((kernel) => this.registerMarkdownCodeBlockProcessor('jupyter-' + kernel.language, this.postprocessor.bind(this)))
 	}
 }
 
@@ -272,6 +271,7 @@ class JupyterSettingTab extends PluginSettingTab {
 
 	display(): void {
 		let { containerEl } = this;
+		const kernels = this.plugin.settings.kernels;
 
 		containerEl.empty();
 
@@ -285,19 +285,6 @@ class JupyterSettingTab extends PluginSettingTab {
 					this.plugin.settings.pythonInterpreter = value;
 					await this.plugin.saveSettings();
 				}));
-
-		new Setting(containerEl)
-			.setName('Python setup script')
-			.setDesc('Script that is run prior to every execution of a python code block.')
-			.setClass('setupScriptTextArea')
-			.setClass('wideSettingsElement')
-			.addTextArea(text => text
-				.setValue(this.plugin.settings.setupScript)
-				.onChange(async (value) => {
-					this.plugin.settings.setupScript = value;
-					await this.plugin.saveSettings();
-				})
-			);
 
 		new Setting(containerEl)
 			.setName('Test python environment')
@@ -349,5 +336,20 @@ class JupyterSettingTab extends PluginSettingTab {
 					});
 				});
 			});
+
+		Object.entries(kernels).forEach(([key, kernel]) => {
+			new Setting(containerEl)
+				.setName(`${kernel.displayName} setup script`)
+				.setDesc(`Script that is run prior to every execution of a ${kernel.language} code block.`)
+				.setClass('setupScriptTextArea')
+				.setClass('wideSettingsElement')
+				.addTextArea(text => text
+					.setValue(this.plugin.settings.kernels[key].setupScript)
+					.onChange(async (value) => {
+						this.plugin.settings.kernels[key].setupScript = value;
+						await this.plugin.saveSettings();
+					})
+				)
+		})
 	}
 }
