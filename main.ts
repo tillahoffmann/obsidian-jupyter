@@ -106,11 +106,12 @@ export default class JupyterPlugin extends Plugin {
 		// Needed for positioning of the button and hiding Jupyter prompts.
 		el.classList.add('obsidian-jupyter');
 		// Add a button to run the code.
-		let button = el.createEl('button', {
+		let button = el.querySelector('pre').createEl('button', {
 			type: 'button',
 			text: 'Run',
-			cls: 'obsidian-jupyter-run-button',
+			cls: 'copy-code-button',
 		});
+		button.setAttribute('style', `right: 32pt`);
 		button.addEventListener('click', () => {
 			button.innerText = 'Running...';
 			this.getJupyterClient(ctx).request({
@@ -294,7 +295,7 @@ class JupyterSettingTab extends PluginSettingTab {
 				button.setButtonText('Install dependencies');
 				button.onClick(evt => {
 					let interpreter = this.plugin.settings.pythonInterpreter;
-					let command = `${interpreter} -m pip install --upgrade --upgrade-strategy eager jupyter`;
+					let command = `${interpreter} -u -m pip install --upgrade --upgrade-strategy eager jupyter`;
 					new Notice('Installing dependencies; this may take some time...');
 					exec(command, (error, stdout, stderr) => {
 						if (error) {

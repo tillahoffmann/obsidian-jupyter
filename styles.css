@@ -1,31 +1,3 @@
-.obsidian-jupyter-run-button {
-    color: var(--background-primary);
-    background-color: var(--text-faint);
-    border-radius: 1px 1px 0px 0px;
-
-    /* right-align */
-    display: block;
-    margin-left: auto;
-    margin-right: 0;
-
-    margin-bottom: -2px;
-    padding: 3px 8px;
-    font-size: 0.8em;
-
-    position: absolute;
-    top: 0px;
-    right: 0px;
-}
-
-.obsidian-jupyter-run-button:hover {
-    background-color: var(--text-normal);
-}
-
-/* required to make the button position properly */
-.obsidian-jupyter {
-    position: relative;
-}
-
 /* hide the output prompts of jupyter cells*/
 .obsidian-jupyter .prompt, .obsidian-jupyter .input {
     display: none;
