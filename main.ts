@@ -6,12 +6,16 @@ import {
 	Setting,
 	FileSystemAdapter,
 	MarkdownRenderer,
-	Notice
+	Notice,
+	WorkspaceLeaf,
+	FileView,
+	TFile
 } from 'obsidian';
 import { spawn, exec, ChildProcess } from 'child_process';
 import { v4 as uuid } from 'uuid';
-import { statSync, writeFileSync } from 'fs';
+import { statSync, writeFileSync, readFileSync, rm } from 'fs';
 import { HttpClient } from 'typed-rest-client/HttpClient';
+import { tmpdir } from 'os';
 
 
 // https://stackoverflow.com/a/47614491/1150961.
@@ -36,6 +40,51 @@ const DEFAULT_SETTINGS: JupyterPluginSettings = {
 	setupScript: '',
 }
 
+class JupterPreview extends FileView {
+	interpreter: string;
+
+	constructor(leaf: WorkspaceLeaf, interpreter: string) {
+		super(leaf);
+		// Show a placeholder before we've converted the notebook.
+		this.contentEl.innerHTML = 'Converting notebook...';
+		this.interpreter = interpreter;
+	}
+
+	onLoadFile(file: TFile): Promise<void> {
+		// Get the base path of the vault.
+		let adapter = file.vault.adapter;
+		if (!(adapter instanceof FileSystemAdapter)) {
+			this.contentEl.innerHTML = 'Could not determine notebook path.';
+			return null;
+		}
+		// Convert the file by writing it to a temporary location. Piping unfortunately leads to
+		// problems for long lines due to buffer overflows.
+		let basePath = adapter.getBasePath();
+		let filename = `${basePath}/${file.path}`;
+		let htmlPath = `${tmpdir()}/${uuid()}.html`;
+		let args = ['-m', 'nbconvert', `--output=${htmlPath}`, '--to=html', filename];
+		let child = spawn(this.interpreter, args);
+
+		// Process the output and delete the temporary file.
+		child.on('close', (code: number) => {
+			if (code) {
+				this.contentEl.innerHTML = 'Failed to convert notebook to HTML.';
+			} else {
+				this.contentEl.innerHTML = readFileSync(htmlPath).toString();
+			}
+			rm(htmlPath, () => null);
+		})
+		return null;
+	}
+
+	getViewType(): string {
+		return 'ipynb';
+	}
+
+	canAcceptExtension(extension: string): boolean {
+		return extension === 'ipynb';
+	}
+}
 
 class JupyterClient {
 	process: ChildProcess;
@@ -156,6 +205,10 @@ export default class JupyterPlugin extends Plugin {
 		return client;
 	}
 
+	createJupyterPreview(leaf: WorkspaceLeaf) {
+		return new JupterPreview(leaf, this.settings.pythonInterpreter);
+	}
+
 	async onload() {
 		console.log('loading jupyter plugin');
 		this.clients = new Map();
@@ -165,6 +218,8 @@ export default class JupyterPlugin extends Plugin {
 
 		this.addSettingTab(new JupyterSettingTab(this.app, this));
 		this.registerMarkdownCodeBlockProcessor('jupyter', this.postprocessor.bind(this));
+		this.registerView("ipynb", this.createJupyterPreview.bind(this));
+		this.registerExtensions(["ipynb"], "ipynb");
 	}
 
 	async downloadPythonScript() {

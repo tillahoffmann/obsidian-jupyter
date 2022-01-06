@@ -4,7 +4,7 @@ import json
 
 def dump(object, filename):
     with open(filename, 'w') as fp:
-        json.dump(object, fp, indent=4)
+        json.dump(object, fp, indent=4, sort_keys=True)
         # Add final newline.
         fp.write('\n')
 
