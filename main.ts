@@ -70,7 +70,7 @@ class JupterPreview extends FileView {
 			if (code) {
 				this.contentEl.innerHTML = 'Failed to convert notebook to HTML.';
 			} else {
-				this.contentEl.innerHTML = readFileSync(htmlPath).toString();
+				setInnerHTML(this.contentEl, readFileSync(htmlPath).toString());
 			}
 			rm(htmlPath, () => null);
 		})
