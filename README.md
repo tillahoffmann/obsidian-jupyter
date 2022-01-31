@@ -38,7 +38,3 @@ obsidian-jupyter:
  interpreter: interpreter-path
 ---
 ```
-
-## Known issues
-
-* This plugin conflicts with the [banners plugin](https://github.com/noatpad/obsidian-banners) (see [#4](https://github.com/tillahoffmann/obsidian-jupyter/issues/4#issuecomment-913042968) for details).
