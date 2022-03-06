@@ -70,7 +70,16 @@ class JupterPreview extends FileView {
 			if (code) {
 				this.contentEl.innerHTML = 'Failed to convert notebook to HTML.';
 			} else {
-				setInnerHTML(this.contentEl, readFileSync(htmlPath).toString());
+				let frame = document.createElement('iframe');
+				const html = readFileSync(htmlPath).toString();
+				const blob = new Blob([html], {type: 'text/html'});
+				frame.src = window.URL.createObjectURL(blob);
+				frame.style.border = "none";
+				frame.width = '100%';
+				frame.height = '99%';
+
+				this.contentEl.innerHTML = '';
+				this.contentEl.appendChild(frame);
 			}
 			rm(htmlPath, () => null);
 		})
