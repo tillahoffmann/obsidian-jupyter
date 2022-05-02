@@ -10,3 +10,8 @@
 .setupScriptTextArea textarea {
     font-family: monospace;
 }
+
+.notebookPreview {
+    border: none;
+    width: 100%;
+}
