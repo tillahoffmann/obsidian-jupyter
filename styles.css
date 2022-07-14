@@ -15,3 +15,7 @@
     border: none;
     width: 100%;
 }
+
+.block-language-jupyter{
+    white-space:normal;
+}
