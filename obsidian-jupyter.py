@@ -4,6 +4,7 @@ from jupyter_client import KernelManager
 import nbformat
 from nbconvert import HTMLExporter
 from nbclient import NotebookClient
+from nbclient import execute as _execute
 from nbclient.exceptions import CellExecutionError
 import json
 import logging
@@ -39,7 +40,9 @@ try:
         if request_body['command'] == 'execute':
             cell['source'] = request_body['source']
             try:
-                nb = client.execute(nb)
+                logger.info(f"***************************** start execute****************************** {cell}")
+                nb = _execute(nb)
+                logger.info(f"***************************** after execute****************************** {cell}")
             except CellExecutionError as ex:
                 logger.info('cell failed to execute: %s', ex)
             html_exporter = HTMLExporter(template_name='basic')
