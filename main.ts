@@ -164,7 +164,7 @@ export default class JupyterPlugin extends Plugin {
 
 	async postprocessor(src: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
 		// Render the code using the default renderer for python.
-		await MarkdownRenderer.renderMarkdown('```python\n' + src + '```', el, '',
+		await MarkdownRenderer.renderMarkdown('```python\n' + src + '\n```', el, '',
 											  this.app.workspace.activeLeaf.view);
 
 		// Needed for positioning of the button and hiding Jupyter prompts.
