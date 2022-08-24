@@ -24,5 +24,5 @@
         "build": "rollup --config rollup.config.js --environment BUILD:production",
         "dev": "rollup --config rollup.config.js -w"
     },
-    "version": "0.8.3"
+    "version": "0.8.4"
 }
