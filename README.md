@@ -22,7 +22,7 @@ jupyterlab-widgets==1.0.1
 nbclient==0.5.4
 nbconvert==6.1.0
 nbformat==5.1.3
-notebook=6.4.3
+notebook==6.4.3
 ```
 
 ## Settings
