@@ -6,5 +6,5 @@
     "isDesktopOnly": true,
     "minAppVersion": "0.9.12",
     "name": "Jupyter plugin",
-    "version": "0.8.4"
+    "version": "0.8.5"
 }

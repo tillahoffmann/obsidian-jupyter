@@ -369,12 +369,13 @@ class JupyterSettingTab extends PluginSettingTab {
 					new Notice('Installing dependencies; this may take some time...');
 					exec(command, (error, stdout, stderr) => {
 						if (error) {
-							console.error(`failed to install dependencies: {error}`);
+							console.error(`failed to install dependencies: ${error}`);
 							new Notice('Failed to install dependencies, view developer console for details.');
+						} else {
+							new Notice('Installed dependencies, view developer console for details.');
 						}
 						console.log(`install stdout: ${stdout}`);
-						console.log(`install stderr: ${stdout}`);
-						new Notice('Installed dependencies, view developer console for details.');
+						console.log(`install stderr: ${stderr}`);
 					});
 				});
 			});
