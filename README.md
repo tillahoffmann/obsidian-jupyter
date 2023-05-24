@@ -1,3 +1,21 @@
+# ⚠️ This plugin is deprecated and no longer maintained.
+
+Obsidian has evolved, and integrating the plugin with the new live preview editor is non-trivial. Here is an alternative setup that is future proof, less prone to bugs, and supports many of the requested features (such as storing outputs and supporting `input` calls).
+
+1. Set up your python distribution, install Jupyter Lab and Jupytext for markdown-based notebooks: `pip install jupyterlab jupytext [other dependencies]`.
+2. Run `jupyter lab` from the root directory of your vault.
+3. Right-click on any markdown file and select `Open With > Notebook` to open the Obsidian note as a Jupyter notebook.
+
+Optionally, you can ["pair"](https://jupytext.readthedocs.io/en/latest/paired-notebooks.html) markdown-based notebooks with classic notebook files (`.ipynb` extension) to keep the results if you close and reopen a notebook. To do so, add a `jupytext.toml` file to the root directory of your vault containing the following code. This will create a hidden `.ipynb` directory containing the results of your notebook for later use.
+
+```toml
+formats = "md,.ipynb//ipynb"
+```
+
+Unfortunately, this option does not support Jupyter notebooks *within* Obsidian, but reproducing the Jupyter experience would be a substantial undertaking.
+
+---
+
 # Obsidian Jupyter Plugin ![](https://img.shields.io/badge/stability-alpha-f4d03f.svg) [![Release Obsidian Plugin](https://github.com/tillahoffmann/obsidian-jupyter/actions/workflows/release.yml/badge.svg)](https://github.com/tillahoffmann/obsidian-jupyter/actions/workflows/release.yml) ![](https://img.shields.io/badge/python-≥3.7-blue)
 
 This plugin allows python code blocks in fences with `jupyter` language to be executed as Jupyter notebooks.
